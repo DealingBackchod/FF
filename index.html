@@ -1,99 +1,266 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Free Fire Giveaway Registration</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #121212;
-      color: #eee;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 20px;
-      min-height: 100vh;
-      margin: 0;
-    }
-    h1 {
-      margin-bottom: 20px;
-      color: #ff3b3b;
-      text-shadow: 1px 1px 5px #880000;
-    }
-    form {
-      background: #222;
-      padding: 30px;
-      border-radius: 10px;
-      width: 320px;
-      box-shadow: 0 0 15px #ff3b3baa;
-    }
-    input {
-      width: 100%;
-      padding: 12px 10px;
-      margin: 12px 0;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-    }
-    input:focus {
-      outline: none;
-      box-shadow: 0 0 5px #ff3b3b;
-      background: #333;
-      color: #fff;
-    }
-    button {
-      width: 100%;
-      padding: 14px;
-      background: #ff3b3b;
-      border: none;
-      border-radius: 6px;
-      color: white;
-      font-size: 18px;
-      cursor: pointer;
-      font-weight: bold;
-      margin-top: 10px;
-      transition: background 0.3s ease;
-    }
-    button:hover {
-      background: #cc2c2c;
-    }
-    .note {
-      margin-top: 20px;
-      font-size: 14px;
-      color: #aaa;
-      text-align: center;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Screenshot Editor - Edit Fonts & Colors</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: #f0f0f0;
+  }
+  #editor {
+    position: relative;
+    margin-top: 20px;
+    display: inline-block;
+    border: 2px solid #ccc;
+    background: white;
+  }
+  #screenshot {
+    display: block;
+    max-width: 100%;
+    user-select: none;
+  }
+  .text-box {
+    position: absolute;
+    cursor: move;
+    padding: 2px 6px;
+    border: 1px dashed transparent;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .text-box.selected {
+    border-color: #007bff;
+    background: rgba(0,123,255,0.1);
+  }
+  .controls {
+    margin-top: 10px;
+  }
+  label {
+    margin-right: 10px;
+  }
+  input[type="color"], select, input[type="number"], input[type="text"] {
+    margin-right: 20px;
+    padding: 4px;
+  }
+  button {
+    padding: 6px 15px;
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  button:hover {
+    background: #0056b3;
+  }
+</style>
 </head>
 <body>
-  <h1>GET FREE 2000 DIAMONDS</h1>
-  <form id="giveawayForm">
-    <input type="text" name="uid" placeholder="UID" required />
-    <input type="text" name="ign" placeholder="In-Game Name" required />
-    <input type="tel" name="whatsapp" placeholder="WhatsApp Number" required pattern="[0-9]{10,15}" title="Enter valid number" />
-    <input type="number" name="accountLevel" placeholder="Account Level" min="1" required />
-    <button type="submit">Register Now</button>
-  </form>
 
-  <p class="note">* No passwords or sensitive info required. Your data is safe.</p>
+<h2>Screenshot Editor - Add & Edit Text on Screenshot</h2>
 
-  <script src="https://cdn.emailjs.com/sdk/3.2/email.min.js"></script>
-  <script>
-    (function(){
-      emailjs.init('user_Washifali'); // Your EmailJS User ID
-    })();
+<input type="file" id="upload" accept="image/*" />
+<button id="addTextBtn" disabled>Add Text</button>
+<button id="downloadBtn" disabled>Download Edited Image</button>
 
-    document.getElementById('giveawayForm').addEventListener('submit', function(e) {
+<div id="editor" style="display:none;">
+  <img id="screenshot" src="" alt="Screenshot" />
+</div>
+
+<div class="controls" id="textControls" style="display:none;">
+  <label>Text: <input type="text" id="inputText" /></label>
+  <label>Font: 
+    <select id="fontFamily">
+      <option value="Arial" selected>Arial</option>
+      <option value="Verdana">Verdana</option>
+      <option value="Tahoma">Tahoma</option>
+      <option value="'Times New Roman'">Times New Roman</option>
+      <option value="Georgia">Georgia</option>
+      <option value="'Courier New'">Courier New</option>
+      <option value="Impact">Impact</option>
+    </select>
+  </label>
+  <label>Size: <input type="number" id="fontSize" min="10" max="72" value="24" /> px</label>
+  <label>Color: <input type="color" id="fontColor" value="#000000" /></label>
+</div>
+
+<script>
+  const uploadInput = document.getElementById('upload');
+  const editor = document.getElementById('editor');
+  const screenshotImg = document.getElementById('screenshot');
+  const addTextBtn = document.getElementById('addTextBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const textControls = document.getElementById('textControls');
+  const inputText = document.getElementById('inputText');
+  const fontFamily = document.getElementById('fontFamily');
+  const fontSize = document.getElementById('fontSize');
+  const fontColor = document.getElementById('fontColor');
+
+  let selectedTextBox = null;
+
+  uploadInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      screenshotImg.src = event.target.result;
+      editor.style.display = 'inline-block';
+      addTextBtn.disabled = false;
+      downloadBtn.disabled = false;
+      textControls.style.display = 'none';
+      clearTextBoxes();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function clearTextBoxes() {
+    const boxes = editor.querySelectorAll('.text-box');
+    boxes.forEach(box => box.remove());
+    selectedTextBox = null;
+  }
+
+  addTextBtn.addEventListener('click', () => {
+    const box = document.createElement('div');
+    box.classList.add('text-box', 'selected');
+    box.textContent = 'Edit me';
+    box.style.left = '10px';
+    box.style.top = '10px';
+    box.style.fontFamily = fontFamily.value;
+    box.style.fontSize = fontSize.value + 'px';
+    box.style.color = fontColor.value;
+
+    editor.appendChild(box);
+    selectTextBox(box);
+
+    makeDraggable(box);
+  });
+
+  function selectTextBox(box) {
+    if (selectedTextBox) selectedTextBox.classList.remove('selected');
+    selectedTextBox = box;
+    box.classList.add('selected');
+    textControls.style.display = 'block';
+    inputText.value = box.textContent;
+    fontFamily.value = box.style.fontFamily.replace(/['"]+/g, '');
+    fontSize.value = parseInt(box.style.fontSize);
+    fontColor.value = rgbToHex(box.style.color);
+  }
+
+  // Convert rgb(0,0,0) to hex #000000
+  function rgbToHex(rgb) {
+    const result = /^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/.exec(rgb);
+    if (!result) return '#000000';
+    return '#' + 
+      ('0' + parseInt(result[1],10).toString(16)).slice(-2) +
+      ('0' + parseInt(result[2],10).toString(16)).slice(-2) +
+      ('0' + parseInt(result[3],10).toString(16)).slice(-2);
+  }
+
+  editor.addEventListener('click', e => {
+    if (e.target.classList.contains('text-box')) {
+      selectTextBox(e.target);
+      e.stopPropagation();
+    } else {
+      if (selectedTextBox) {
+        selectedTextBox.classList.remove('selected');
+        selectedTextBox = null;
+        textControls.style.display = 'none';
+      }
+    }
+  });
+
+  inputText.addEventListener('input', () => {
+    if (selectedTextBox) selectedTextBox.textContent = inputText.value;
+  });
+
+  fontFamily.addEventListener('change', () => {
+    if (selectedTextBox) selectedTextBox.style.fontFamily = fontFamily.value;
+  });
+
+  fontSize.addEventListener('input', () => {
+    if (selectedTextBox) selectedTextBox.style.fontSize = fontSize.value + 'px';
+  });
+
+  fontColor.addEventListener('input', () => {
+    if (selectedTextBox) selectedTextBox.style.color = fontColor.value;
+  });
+
+  function makeDraggable(el) {
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    el.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      offsetX = e.clientX - el.getBoundingClientRect().left;
+      offsetY = e.clientY - el.getBoundingClientRect().top;
+      el.style.transition = 'none';
       e.preventDefault();
-
-      emailjs.sendForm('service_1s68kak', '__ejs-test-mail-service__', this)
-      .then(function() {
-          alert('Thanks for registering! Confirmation sent.');
-          e.target.reset();
-      }, function(error) {
-          alert('Oops... ' + JSON.stringify(error));
-      });
     });
-  </script>
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        el.style.transition = '';
+      }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const editorRect = editor.getBoundingClientRect();
+      let x = e.clientX - editorRect.left - offsetX;
+      let y = e.clientY - editorRect.top - offsetY;
+
+      // Boundaries inside the editor
+      x = Math.max(0, Math.min(x, editor.clientWidth - el.offsetWidth));
+      y = Math.max(0, Math.min(y, editor.clientHeight - el.offsetHeight));
+
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+    });
+  }
+
+  downloadBtn.addEventListener('click', () => {
+    if (!screenshotImg.src) return alert('Upload an image first!');
+
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = screenshotImg.naturalWidth;
+    canvas.height = screenshotImg.naturalHeight;
+
+    // Draw the image at natural size
+    ctx.drawImage(screenshotImg, 0, 0, canvas.width, canvas.height);
+
+    // Scale factor between displayed image and natural size
+    const scaleX = canvas.width / screenshotImg.clientWidth;
+    const scaleY = canvas.height / screenshotImg.clientHeight;
+
+    // Draw each text box
+    const boxes = editor.querySelectorAll('.text-box');
+    boxes.forEach(box => {
+      const style = getComputedStyle(box);
+      const font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      ctx.font = font;
+      ctx.fillStyle = style.color;
+      ctx.textBaseline = 'top';
+
+      // Calculate scaled position
+      const x = parseFloat(box.style.left) * scaleX;
+      const y = parseFloat(box.style.top) * scaleY;
+
+      ctx.fillText(box.textContent, x, y);
+    });
+
+    // Download image
+    const link = document.createElement('a');
+    link.download = 'edited_screenshot.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+</script>
+
 </body>
 </html>
